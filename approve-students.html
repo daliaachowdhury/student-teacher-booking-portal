@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Approve Students | Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #f0f4ff;
+        padding: 30px;
+      }
+
+      h2 {
+        text-align: center;
+        color: #4b0082;
+        margin-bottom: 30px;
+      }
+
+      .student-card {
+        background: white;
+        padding: 20px;
+        margin: 10px auto;
+        border-radius: 15px;
+        max-width: 600px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .student-info {
+        flex: 1;
+      }
+
+      .student-info p {
+        margin: 4px 0;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .actions button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .approve {
+        background-color: #22c55e;
+        color: white;
+      }
+
+      .reject {
+        background-color: #ef4444;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Pending Student Approvals</h2>
+    <div id="student-list"></div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        doc,
+        updateDoc
+      } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyB7xXrStoLTYr_nKNBbQlzXkaL9Nte62Qs",
+        authDomain: "student-teacher-portal-7e233.firebaseapp.com",
+        projectId: "student-teacher-portal-7e233",
+        storageBucket: "student-teacher-portal-7e233.appspot.com",
+        messagingSenderId: "922787402727",
+        appId: "1:922787402727:web:5b1e1665aa512ded99e342",
+        measurementId: "G-MD99QTVY5D"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      const studentList = document.getElementById("student-list");
+
+      async function fetchPendingStudents() {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.role === "student" && !data.approved) {
+            const div = document.createElement("div");
+            div.className = "student-card";
+            div.innerHTML = `
+              <div class="student-info">
+                <p><strong>Name:</strong> ${data.name || "N/A"}</p>
+                <p><strong>Email:</strong> ${data.email}</p>
+              </div>
+              <div class="actions">
+                <button class="approve">Approve</button>
+                <button class="reject">Reject</button>
+              </div>
+            `;
+
+            // ✅ Approve
+            div.querySelector(".approve").onclick = async () => {
+              await updateDoc(doc(db, "users", docSnap.id), { approved: true });
+              alert("✅ Approved!");
+              div.remove();
+            };
+
+            // ❌ Reject
+            div.querySelector(".reject").onclick = async () => {
+              await updateDoc(doc(db, "users", docSnap.id), { approved: false });
+              alert("❌ Rejected!");
+              div.remove();
+            };
+
+            studentList.appendChild(div);
+          }
+        });
+      }
+
+      fetchPendingStudents();
+    </script>
+  </body>
+</html>

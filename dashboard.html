@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | Student-Teacher Booking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .dashboard {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+      text-align: center;
+      color: #6b21a8;
+      margin-bottom: 20px;
+    }
+
+    label {
+      margin: 10px 0 5px;
+      display: block;
+      font-weight: bold;
+      color: #4b0082;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .appointment-list {
+      margin-top: 20px;
+    }
+
+    .appointment {
+      background: #f3e8ff;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .logout-btn {
+      background-color: #ef4444;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .logout-btn:hover {
+      background-color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h2>Welcome to Dashboard</h2>
+    <div id="roleSection"></div>
+    <button class="logout-btn" onclick="logout()">Log Out</button>
+  </div>
+
+  <!-- ✅ Firebase logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      addDoc,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7xXrStoLTYr_nKNBbQlzXkaL9Nte62Qs",
+      authDomain: "student-teacher-portal-7e233.firebaseapp.com",
+      projectId: "student-teacher-portal-7e233",
+      storageBucket: "student-teacher-portal-7e233.appspot.com",
+      messagingSenderId: "922787402727",
+      appId: "1:922787402727:web:5b1e1665aa512ded99e342",
+      measurementId: "G-MD99QTVY5D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const roleSection = document.getElementById("roleSection");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Please log in first!");
+        window.location.href = "signin.html";
+        
+      }
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const role = userDoc.data().role;
+
+      if (role === "student") {
+        showStudentForm(user.email);
+      } else if (role === "teacher") {
+        showTeacherView();
+      }
+    });
+
+    function showStudentForm(email) {
+      roleSection.innerHTML = `
+        <h3>Book an Appointment</h3>
+        <label for="teacher">Select Teacher</label>
+        <input id="teacher" placeholder="e.g. Ms. Priya" />
+
+        <label for="date">Date</label>
+        <input type="date" id="date" />
+
+        <label for="time">Time</label>
+        <input type="time" id="time" />
+
+        <label for="message">Reason</label>
+        <textarea id="message" placeholder="Why do you want to book this appointment?"></textarea>
+
+        <button onclick="submitAppointment()">Submit</button>
+      `;
+
+      window.submitAppointment = async function () {
+        const teacher = document.getElementById("teacher").value;
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("time").value;
+        const message = document.getElementById("message").value;
+
+        if (!teacher || !date || !time || !message) {
+          alert("Please fill in all fields.");
+          return;
+        }
+
+        await addDoc(collection(db, "appointments"), {
+          studentEmail: email,
+          teacher: teacher,
+          date: date,
+          time: time,
+          message: message,
+          status: "Pending"
+        });
+
+        alert("✅ Appointment requested!");
+        roleSection.innerHTML = "<p>Appointment request sent. Thank you!</p>";
+      };
+    }
+
+    async function showTeacherView() {
+      roleSection.innerHTML = "<h3>Appointment Requests</h3><div class='appointment-list' id='appointmentList'></div>";
+
+      const querySnapshot = await getDocs(collection(db, "appointments"));
+      const listContainer = document.getElementById("appointmentList");
+
+      if (querySnapshot.empty) {
+        listContainer.innerHTML = "<p>No appointment requests found.</p>";
+        return;
+      }
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const item = document.createElement("div");
+        item.classList.add("appointment");
+        item.innerHTML = `
+          <p><strong>Student:</strong> ${data.studentEmail}</p>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Time:</strong> ${data.time}</p>
+          <p><strong>Message:</strong> ${data.message}</p>
+          <p><strong>Status:</strong> ${data.status}</p>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // 🔒 Logout
+    window.logout = function () {
+      signOut(auth).then(() => {
+        window.location.href = "signin.html";
+      });
+    };
+  </script>
+</body>
+</html>

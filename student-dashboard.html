@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f3ff;
+      padding: 20px;
+      position: relative;
+    }
+
+    h2 {
+      text-align: center;
+      color: #6b21a8;
+      margin-bottom: 20px;
+    }
+
+    .teacher-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      max-width: 700px;
+      margin-inline: auto;
+    }
+
+    .teacher-card p {
+      margin: 6px 0;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    button {
+      background: #7c3aed;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #5b21b6;
+    }
+
+    #logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #ef4444;
+      color: white;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #logout-btn:hover {
+      background: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎓 Student Dashboard</h2>
+
+  <button id="logout-btn">🚪 Logout</button>
+
+  <div id="teacher-list"></div>
+
+  <!-- Firebase logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7xXrStoLTYr_nKNBbQlzXkaL9Nte62Qs",
+      authDomain: "student-teacher-portal-7e233.firebaseapp.com",
+      projectId: "student-teacher-portal-7e233",
+      storageBucket: "student-teacher-portal-7e233.appspot.com",
+      messagingSenderId: "922787402727",
+      appId: "1:922787402727:web:5b1e1665aa512ded99e342",
+      measurementId: "G-MD99QTVY5D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const teacherList = document.getElementById("teacher-list");
+
+    onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    alert("Please sign in first.");
+    window.location.href = "signin.html";
+    return;
+  }
+
+  // ✅ Read from "teachers" collection instead of "users"
+  const res = await getDocs(collection(db, "teachers"));
+  teacherList.innerHTML = "";
+
+  res.forEach((doc) => {
+    const data = doc.data();
+
+    const div = document.createElement("div");
+    div.className = "teacher-card";
+    div.innerHTML = `
+      <p><strong>Name:</strong> ${data.name}</p>
+      <p><strong>Department:</strong> ${data.department}</p>
+      <p><strong>Subject:</strong> ${data.subject}</p>
+
+      <label>Book Appointment Date & Time:</label>
+      <input type="datetime-local" id="date-${doc.id}" />
+
+      <button onclick="book('${doc.id}', '${data.name}')">Book Appointment</button>
+
+      <label>Send a Message:</label>
+      <textarea id="msg-${doc.id}" rows="3" placeholder="Write your message..."></textarea>
+
+      <button onclick="sendMsg('${doc.id}')">Send Message</button>
+    `;
+    teacherList.appendChild(div);
+  });
+});
+
+    // ✅ Book Appointment
+    window.book = async (teacherId, teacherName) => {
+      const user = auth.currentUser;
+      if (!user) return alert("Login first");
+
+      const dateTime = document.getElementById(`date-${teacherId}`).value;
+      if (!dateTime) return alert("Please select date/time");
+
+      await addDoc(collection(db, "appointments"), {
+        studentId: user.uid,
+        teacherId,
+        teacherName,
+        dateTime,
+        status: "pending",
+        timestamp: Timestamp.now()
+      });
+
+      alert("✅ Appointment Requested!");
+    };
+
+    // ✅ Send Message
+    window.sendMsg = async (teacherId) => {
+      const user = auth.currentUser;
+      const message = document.getElementById(`msg-${teacherId}`).value;
+      if (!message) return alert("Enter message");
+
+      await addDoc(collection(db, "messages"), {
+        from: user.uid,
+        to: teacherId,
+        message,
+        timestamp: Timestamp.now()
+      });
+
+      alert("📤 Message sent!");
+    };
+
+    // ✅ Logout
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      signOut(auth)
+        .then(() => {
+          alert("✅ Logged out successfully.");
+          window.location.href = "signin.html";
+        })
+        .catch((error) => {
+          alert("❌ Logout failed.");
+          console.error(error);
+        });
+    });
+  </script>
+</body>
+</html>

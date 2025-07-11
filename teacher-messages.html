@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Inbox | Messages</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3f4f6;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #4b0082;
+      margin-bottom: 30px;
+    }
+
+    .message-card {
+      background: white;
+      padding: 20px;
+      margin: 15px auto;
+      max-width: 600px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .message-card p {
+      margin: 8px 0;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <h2>📩 Teacher Inbox</h2>
+  <div id="messages-list"></div>
+
+  <!-- Firebase script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      where
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7xXrStoLTYr_nKNBbQlzXkaL9Nte62Qs",
+      authDomain: "student-teacher-portal-7e233.firebaseapp.com",
+      projectId: "student-teacher-portal-7e233",
+      storageBucket: "student-teacher-portal-7e233.appspot.com",
+      messagingSenderId: "922787402727",
+      appId: "1:922787402727:web:5b1e1665aa512ded99e342",
+      measurementId: "G-MD99QTVY5D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const messagesList = document.getElementById("messages-list");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Please sign in");
+        window.location.href = "signin.html";
+        return;
+      }
+
+      const q = query(collection(db, "messages"), where("to", "==", user.uid));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        messagesList.innerHTML = "<p style='text-align:center;'>No messages yet 📭</p>";
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+        const msg = docSnap.data();
+
+        const card = document.createElement("div");
+        card.className = "message-card";
+
+        const time = msg.timestamp?.toDate?.().toLocaleString() ?? "No time";
+
+        card.innerHTML = `
+          <p><strong>From (Student UID):</strong> ${msg.from}</p>
+          <p><strong>Message:</strong> ${msg.message}</p>
+          <p class="timestamp">🕒 ${time}</p>
+        `;
+
+        messagesList.appendChild(card);
+      });
+    });
+  </script>
+</body>
+</html>

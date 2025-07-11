@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📘 Book-In | Sign Up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(-45deg, #a78bfa, #c084fc, #f0abfc, #f9a8d4);
+      background-size: 400% 400%;
+      animation: gradientMove 10s ease infinite;
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .form {
+      width: 100%;
+      max-width: 400px;
+      background: #ffffffdd;
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+      transition: 0.4s ease;
+      animation: fadeIn 1s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    h2 {
+      text-align: center;
+      color: #6b21a8;
+      margin-bottom: 20px;
+      font-size: 26px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #4b0082;
+      margin: 10px 0 5px;
+      display: block;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus {
+      border-color: #a855f7;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #8b5cf6;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      position: relative;
+    }
+
+    button:hover {
+      background-color: #7c3aed;
+    }
+
+    p {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 15px;
+      color: #444;
+    }
+
+    a {
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Loader Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid #fff;
+      border-top: 3px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="form">
+    <h2>👋 Welcome to <strong>Book-In</strong></h2>
+
+    <label for="role">🧑‍💼 Register as</label>
+    <select id="role">
+      <option value="">Select role</option>
+      <option value="student">Student 👩‍🎓</option>
+      <option value="teacher">Teacher 👨‍🏫</option>
+      <option value="admin">Admin 🛠️</option>
+    </select>
+
+    <label for="email">📧 Email</label>
+    <input type="email" id="email" placeholder="Enter your email" />
+
+    <label for="password">🔒 Password</label>
+    <input type="password" id="password" placeholder="Create password" />
+
+    <button id="submit-btn">🚀 Create Account <span id="spinner" class="spinner hidden"></span></button>
+
+    <p>Already have an account? <a href="signin.html">Sign In</a></p>
+  </div>
+
+  <!-- ✅ Firebase Signup Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7xXrStoLTYr_nKNBbQlzXkaL9Nte62Qs",
+      authDomain: "student-teacher-portal-7e233.firebaseapp.com",
+      projectId: "student-teacher-portal-7e233",
+      storageBucket: "student-teacher-portal-7e233.appspot.com",
+      messagingSenderId: "922787402727",
+      appId: "1:922787402727:web:5b1e1665aa512ded99e342",
+      measurementId: "G-MD99QTVY5D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const btn = document.getElementById("submit-btn");
+    const spinner = document.getElementById("spinner");
+
+    btn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+
+      if (!email || !password || !role) {
+        alert("❗ Please fill in all fields.");
+        return;
+      }
+
+      spinner.classList.remove("hidden");
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          email,
+          role
+        });
+
+        alert("✅ Account created successfully!");
+
+        // Redirect to dashboard based on role
+        if (role === "admin") {
+          window.location.href = "admin-dashboard.html";
+        } else if (role === "teacher") {
+          window.location.href = "teacher-dashboard.html";
+        } else {
+          window.location.href = "student-dashboard.html";
+        }
+
+      } catch (error) {
+        alert(`❌ ${error.message}`);
+        console.error(error);
+      } finally {
+        spinner.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>

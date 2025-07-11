@@ -1,0 +1,143 @@
+<!-- add-teacher.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Add Teacher | Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .form {
+        max-width: 500px;
+        margin: auto;
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      h2 {
+        text-align: center;
+        color: #6b21a8;
+        margin-bottom: 20px;
+      }
+
+      label {
+        font-weight: 600;
+        color: #4b0082;
+        margin-top: 10px;
+        display: block;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        margin-top: 20px;
+        width: 100%;
+        background-color: #8b5cf6;
+        color: white;
+        padding: 12px;
+        font-weight: bold;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #7c3aed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form">
+      <h2>Add Teacher</h2>
+
+      <label for="name">Name</label>
+      <input type="text" id="name" placeholder="Enter teacher name" />
+
+      <label for="department">Department</label>
+      <input type="text" id="department" placeholder="e.g. Computer Science" />
+
+      <label for="subject">Subject</label>
+      <input type="text" id="subject" placeholder="e.g. DBMS" />
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Enter teacher email" />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Create password" />
+
+      <button onclick="addTeacher()">Add Teacher</button>
+    </div>
+
+    <!-- Firebase + Logic -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+      import {
+        getAuth,
+        createUserWithEmailAndPassword
+      } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        setDoc
+      } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyB7xXrStoLTYr_nKNBbQlzXkaL9Nte62Qs",
+        authDomain: "student-teacher-portal-7e233.firebaseapp.com",
+        projectId: "student-teacher-portal-7e233",
+        storageBucket: "student-teacher-portal-7e233.appspot.com",
+        messagingSenderId: "922787402727",
+        appId: "1:922787402727:web:5b1e1665aa512ded99e342",
+        measurementId: "G-MD99QTVY5D"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      window.addTeacher = async function () {
+        const name = document.getElementById("name").value.trim();
+        const department = document.getElementById("department").value.trim();
+        const subject = document.getElementById("subject").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        if (!name || !department || !subject || !email || !password) {
+          alert("❗ Please fill all fields.");
+          return;
+        }
+
+        try {
+          // Create teacher auth
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          // Save to Firestore
+          await setDoc(doc(db, "users", user.uid), {
+            name,
+            department,
+            subject,
+            email,
+            role: "teacher",
+            approved: true // Teachers are auto-approved
+          });
+
+          alert("✅ Teacher added successfully!");
+          window.location.href = "admin-dashboard.html";
+
+        } catch (error) {
+          alert(`❌ ${error.message}`);
+          console.error(error);
+        }
+      };
+    </script>
+  </body>
+</html>
